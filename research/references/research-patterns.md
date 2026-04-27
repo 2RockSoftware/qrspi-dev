@@ -1,29 +1,29 @@
 # Research Patterns
 
-Guidelines for effective research during the QRSPI flow.
+Guidelines for effective research during the QRSPI flow. Research is a documentarian, not a designer — these patterns reinforce that boundary.
 
 ## Research Methodology
 
 ### Step 1: Identify Knowledge Gaps
-- Read the upstream artifacts (questions.md, etc.) and list things you don't know
-- Prioritize gaps that block design decisions
-- Separate "need to know now" from "nice to know later"
+- Read `questions.md` and list its Open Decisions and Remaining Uncertainties.
+- Prioritize gaps that block Design decisions over nice-to-knows.
+- Anything outside `questions.md`'s scope is out of scope.
 
 ### Step 2: Gather Information
-- Start broad (overview, best practices) then drill into specifics
-- Prefer official documentation over third-party blogs when possible
-- Search for real-world examples and case studies, not just theory
-- Read existing code when available — it often reveals more than docs
+- Start broad (overviews, official documentation), then drill into specifics.
+- Prefer official documentation over third-party blogs.
+- Read existing code when an existing codebase is in scope — it often reveals more than docs.
+- Capture file paths, URLs, version numbers as you go.
 
-### Step 3: Evaluate and Synthesize
-- Cross-reference findings from multiple sources
-- Note contradictions or conflicting recommendations
-- Ground all recommendations in evidence, not opinion
-- Be honest about uncertainty — mark things as "recommended" vs. "unconfirmed"
+### Step 3: Cross-Reference and Mark Contradictions
+- Cross-reference findings from multiple sources.
+- When sources disagree, surface the conflict — do not pick a winner.
+- Be honest about uncertainty: distinguish "documented behavior" from "behavior I observed in practice" from "what the community generally claims."
+- **Do not generate recommendations.** Recommendations belong to Design. If a finding wants to become a recommendation, refile it as an Open Question (for Design).
 
 ### Step 4: Organize by Decision Area
-- Group findings by the *decisions they inform*, not by source
-- Each section should answer: "What should we do about X, and why?"
+- Group findings by the *decisions they inform*, not by source.
+- Each section answers "What does the evidence say about decision X?" — not "What did source Y say?"
 
 ## Citing Sources
 
@@ -34,28 +34,30 @@ Use a consistent format:
 ```
 
 For web sources: include the URL and what specifically you found there.
-For code sources: include the file path and what you learned from it.
-For docs: include the doc name, version, and relevant sections.
+For code sources: include `file:line` and what you learned from it.
+For docs: include doc name, version, and relevant section.
 
-## Organizing by Topic
+## Organizing by Decision Area
 
-Good organization:
+Good organization (mirrors `questions.md` decision areas):
 
 ```markdown
 ## Authentication Strategy
+
 ### Findings
-- ...
-### Sources
-- ...
-### Recommendation
-- ...
+- Django's built-in auth uses session cookies, with optional token middleware via DRF. [Django docs](https://docs.djangoproject.com/en/5.0/topics/auth/)
+- JWT requires a separate package (`djangorestframework-simplejwt`); no first-party support. [DRF SimpleJWT](https://django-rest-framework-simplejwt.readthedocs.io/)
+- The existing codebase at `auth/middleware.py:42` already configures session-based auth.
+
+### Open Question (for Design)
+Should this project keep the existing session-based auth or layer JWT on top for the new API surface? Both are documented as viable.
 
 ## Data Storage
+
 ### Findings
 - ...
-### Sources
-- ...
-### Recommendation
+
+### Open Question (for Design)
 - ...
 ```
 
@@ -67,33 +69,42 @@ Avoid organizing by source:
 ## From the existing codebase...
 ```
 
+Source-organized notes are intermediate scratch work, not the artifact.
+
 ## Identifying Relevant Patterns
 
 ### Red Flags (low relevance)
 - Patterns for a different problem domain
 - Solutions to problems you don't have
 - Trends that don't match your constraints
-- Over-engineered solutions for simple problems
+- Over-engineered patterns for simple problems
 
 ### Green Flags (high relevance)
 - Solutions used by similar projects in your domain
-- Patterns that address your specific constraints
+- Patterns that address constraints named in `questions.md`
 - Approaches mentioned in official documentation
-- Patterns already used in an existing codebase
+- Patterns already in use in any existing codebase being extended
 
 ## Handling Conflicting Information
 
 When sources disagree:
-1. Note the conflict explicitly
-2. Explain both sides
-3. Recommend based on your assessment of the project's priorities
-4. Mark as "needs user decision" if you can't determine the right choice
+
+1. Note the conflict explicitly.
+2. Document each side with its source.
+3. **Do not pick a winner.** Surface the conflict as an Open Question (for Design).
 
 Example:
 
 ```markdown
 ## Template Engine
-- Django's template engine: simple, built-in, well-documented
-- Jinja2: more flexible, faster, but requires additional setup
-- **Recommendation**: Django templates for simplicity, unless the team has strong Jinja2 experience
+
+### Findings
+- Django's built-in templates: included with the framework, well-documented. [Django docs](https://docs.djangoproject.com/en/5.0/topics/templates/)
+- Jinja2: faster on benchmarks, more flexible feature set, requires a small integration shim. [Jinja2 docs](https://jinja.palletsprojects.com/)
+- Existing codebase uses Django templates throughout (`templates/` directory).
+
+### Open Question (for Design)
+Stick with Django templates for consistency with the existing codebase, or switch to Jinja2 for the new feature for the performance / flexibility delta?
 ```
+
+A previous version of this template included a `Recommendation:` subsection. That was wrong; recommendations are Design's job.

@@ -1,125 +1,120 @@
 # Plan Format
 
-Specification for writing effective `plan.md` documents.
+Specification for writing per-slice `plan.md` documents (one per slice, at `slices/slice-N/plan.md`).
 
 ## Overall Structure
 
 ```markdown
-# Plan: [Project Name]
+# Plan: Slice <N> — <slice name from structure.md>
 
 ## Context
-[Project summary, tech choices, constraints, cross-cutting concerns]
 
-## Phase 1: [Name]
-[1-3 sentence description of what this phase accomplishes]
+**Capability:** <what the user can do after this slice ships, from structure.md>
+**Stack coverage:** <layers/components, from structure.md>
+**Footprint:** <coarse directories, from structure.md>
 
-- [ ] **1.1 Task Title** — One-line summary
+**Design anchors:**
+- [<short reference>](../../design.md#<section>) — <one-line summary>
+- ...
+
+## Tasks
+
+- [ ] **1. Task Title** — One-line summary
   - **Files:** `src/file1.py`, `src/file2.py`
-  - **Description:** Detailed description of what to do
-  - **Dependencies:** Task 1.0
-  - **Decisions:** [design.md](#technology-choices) — use FastAPI for the API layer
+  - **Description:** What to do, in enough detail for execution without ambiguity.
+  - **Dependencies:** (or "none" for the first task)
 
-- [ ] **1.2 Task Title** — One-line summary
-  - **Files:** `src/database.py`
-  - **Description:** ...
-  - **Dependencies:** Task 1.1
+- [ ] **2. Task Title** — ...
 
-## Phase 2: [Name]
-...
+- [ ] **N. Run verification** — execute the verification steps below.
 
-## Worktree Guidance
-Expected directory structure:
-```
-project/
-├── src/
-│   ├── api/
-│   ├── models/
-│   └── utils/
-├── tests/
-└── config/
+## Verification Steps
+
+The slice is complete when all of the following pass:
+
+```bash
+pytest slices/slice-<N>/tests/ -v
+ruff check src/
+mypy src/
 ```
 
-Tooling: Python 3.11+, pip, pytest, ruff, black
-```
+These commands run after all other tasks are marked `[x]` and all tests are written. See implement/SKILL.md for the verification-attempt budget.
+
+End-to-end test for this slice:
+- `tests/e2e/test_slice_<N>.py::test_<capability>` — exercises <user capability described in structure.md>.
 ```
 
 ## Task Naming Conventions
 
-- Use **numbered phases**: Phase 1, Phase 2, etc.
-- Use **numbered tasks**: 1.1, 1.2, 1.3, 2.1, 2.2, etc.
-- Use **descriptive titles**: "Implement user authentication" not "Task 1"
-- Use **action verbs**: Create, Implement, Configure, Set up, Write, Add
+- Use **flat numbering** within a slice: 1, 2, 3, … No phases or sub-phases (one slice = one task list).
+- Use **descriptive titles**: "Implement user registration handler" not "Task 1."
+- Use **action verbs**: Create, Implement, Configure, Wire up, Write, Add.
 
 ## Writing Task Descriptions
 
 Good task descriptions include:
 
 ### What
-- What should be created or modified
-- The expected outcome of the task
-- Any specific behaviors the code should have
+- What should be created or modified.
+- The expected outcome of the task.
+- Any specific behaviors the code should have.
 
 ### Where
-- Which files to create or modify
-- Which files to read for context
-- Where new code should be placed
+- Which files to create or modify.
+- Which existing files to read for context.
 
 ### How (high-level)
-- Key decisions that apply to this task
-- Patterns or conventions to follow
-- Any specific algorithms or approaches to use
+- Patterns or conventions to follow (referencing design.md).
+- Any specific algorithms or approaches to use.
 
 ### Dependencies
-- Which tasks must be completed before this one
-- Which outputs from previous tasks this task consumes
-
-### Decisions to Apply
-- Which design.md decisions inform this task
-- Which research.md findings should be applied
+- Which prior tasks (in this slice) must be complete first.
 
 ## Example Task
 
 ```markdown
-- [ ] **1.1 Create database models**
-  - **Files:** `src/models/user.py`, `src/models/project.py`, `src/models/__init__.py`
-  - **Description:** Create SQLAlchemy ORM models for User and Project entities.
-    - User model: id (UUID primary key), email (unique string), password_hash (string),
-      created_at (datetime), projects (relationship to Project)
-    - Project model: id (UUID primary key), name (string), description (text, nullable),
-      owner_id (FK to User), created_at (datetime)
-    - Use UUIDs for all primary keys
-    - Use UTC timestamps with timezone awareness
-    - Add __init__.py that exports both models
-  - **Dependencies:** Task 1.0 (database connection setup)
-  - **Decisions:** [design.md](#data-layer) — use SQLAlchemy 2.0 async API, UUID primary keys
+- [ ] **3. Implement registration handler**
+  - **Files:** `src/api/auth.py`, `src/api/__init__.py`
+  - **Description:** Implement `POST /register` endpoint. Accepts `{email, password}` JSON body. Validates email format and password length (≥ 8 chars). Hashes password with bcrypt. Inserts a `User` row. Returns `201` with the user's id, or `400` with a validation error. Wire into the app's URL routing in `src/api/__init__.py`.
+  - **Dependencies:** Task 2 (User model exists), Task 1 (bcrypt installed).
 ```
 
-## Phase Grouping
+## Verification Steps Subsection
 
-Group tasks into logical phases. Common phase groupings:
+Every plan ends with explicit, runnable verification commands. The Implement phase runs these to determine when the slice is done.
 
-- **Data layer → API layer → Integration → Polish**
-- **Core functionality → Extended features → Edge cases → Polish**
-- **Foundation → Features → Integration → Testing**
+Required:
 
-Each phase should have a one-sentence description explaining its scope.
+- At least one **end-to-end test** that exercises the slice's user-visible capability (the one named in `structure.md`).
+- Lint and typecheck commands appropriate to the language.
 
-## Checkbox Management
+Optional:
 
-- Start all tasks with `[ ]` (empty checkbox)
-- The Implement phase will mark them as `[x]` (completed) as work progresses
-- Do not pre-mark any tasks as complete
-- Order tasks so checkboxes are naturally filled left-to-right, top-to-bottom
+- Unit tests for individual components touched by this slice.
+- Integration tests that span multiple components.
+
+The verification commands are part of the slice's commitment. If verification can't be expressed as a runnable command, the slice was under-specified — escalate to Structure.
 
 ## Task Granularity
 
 **Too granular:**
-- [ ] "Create file `src/utils.py`"
-- [ ] "Add import for `requests` in `src/utils.py`"
-- [ ] "Define function `fetch_data()` in `src/utils.py`"
+- [ ] Create file `src/utils.py`
+- [ ] Add import for `requests` in `src/utils.py`
+- [ ] Define function `fetch_data()` in `src/utils.py`
 
 **Just right:**
-- [ ] "Create utility module with `fetch_data()` function that handles HTTP requests with retry logic"
+- [ ] Create utility module with `fetch_data()` function that handles HTTP requests with retry logic.
 
 **Too broad:**
-- [ ] "Build the entire API layer"
+- [ ] Build the entire API layer.
+
+## Checkbox Management
+
+- All tasks start with `[ ]` (empty checkbox).
+- Implement marks them `[x]` as work progresses, in `slices/slice-N/plan.md`.
+- Do not pre-mark any tasks as complete.
+- A slice is complete when all tasks are `[x]` **and** the verification steps pass cleanly.
+
+## What Was Removed from a Previous Version
+
+A previous version of this format included a "Phase Grouping" section with examples like *"Data layer → API layer → Integration → Polish"* and *"Foundation → Features → Integration → Testing."* Those are horizontal-layer phasings — the exact anti-pattern Structure prevents. They are intentionally absent now. One slice = one flat task list = no internal phases.

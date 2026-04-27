@@ -2,7 +2,38 @@
 
 Use this guide to ensure you're asking comprehensive questions across all relevant dimensions.
 
+## Two Registers
+
+The Questions phase runs in two registers simultaneously:
+
+- **Dialogue register** — open, conversational questions. Avoid yes/no framing; explore tradeoffs; surface implicit assumptions.
+- **Artifact register** — option-framed decisions in `questions.md`. Each decision is rendered with options, default, and consequences.
+
+The dialogue is for the user's benefit; the artifact is the structured record. The same topic almost always appears in both — open in conversation, structured in the artifact.
+
+## Worked Example
+
+A user says: *"I want to build a CLI tool that manages my reading list."*
+
+In dialogue you might ask: *"How do you want this stored — local file you can sync across machines yourself, or a cloud-backed store that syncs automatically?"*
+
+In `questions.md` the same topic renders as:
+
+```markdown
+**Q3: Reading-list storage backend.**
+- Options: A) local SQLite, B) local JSON file, C) cloud-synced (e.g. SQLite + Litestream, or a managed service)
+- Default: A — simplest for a single-user CLI.
+- Consequence of A: no automatic cross-device sync; user copies the file or uses their own sync (Dropbox, etc).
+- Consequence of B: human-readable; lossy on concurrent writes; no schema enforcement.
+- Consequence of C: works across devices out of the box; adds a network dependency and an account to manage.
+- Resolved: A
+```
+
+Note: `Resolved:` only appears once the user has converged on an option. Open decisions ship to Research without that line.
+
 ## Question Categories
+
+For each category, surface at least one option-framed decision in the artifact. The dialogue may cover much more.
 
 ### Functional Requirements
 
@@ -57,25 +88,32 @@ Use this guide to ensure you're asking comprehensive questions across all releva
 - What will be addressed in future iterations?
 - Are there any parts that should be reused from existing work?
 
-## Asking Techniques
+## Negative-Space Reasoning
 
-- **Avoid yes/no questions** — ask "what" and "how" instead of "do you want"
-  - ❌ "Do you need authentication?"
-  - ✅ "How should users authenticate and what access levels do they need?"
-- **Explore tradeoffs** — help the user think through options
-  - "If we use a monolithic architecture vs. modular, what would that mean for your timeline and maintenance?"
-- **Ask about constraints before solutions** — constraints drive good design decisions
+A common failure mode: the model only addresses what the user explicitly raised. Counter it deliberately. For each architectural area above, ask **what's *not* been said yet** and surface at least three undecided things with their consequences. The artifact's Open Decisions section is where this coverage shows up.
+
+Concrete example: if the user said "build a web app" but never said anything about auth, the artifact should still carry an Open Decision for auth (`Q?: Authentication approach. Options: ...`). Negative-space reasoning is what catches that.
+
+## Asking Techniques (Dialogue Register)
+
+- **Avoid yes/no questions** — ask "what" and "how" instead of "do you want."
+  - "Do you need authentication?" → "How should users authenticate and what access levels do they need?"
+- **Explore tradeoffs** — help the user think through options.
+  - "Monolith vs. modular — what would each mean for your timeline and maintenance?"
+- **Ask about constraints before solutions.**
   - "What deployment environment do you need to support?" before "Should we use Docker?"
-- **Surface implicit assumptions** — people often forget to mention the obvious
-  - "You mentioned a web interface — should this be responsive for mobile browsers?"
-- **Check for consistency** — make sure different parts of the requirements align
+- **Surface implicit assumptions.**
+  - "You mentioned a web interface — should it be responsive for mobile browsers?"
+- **Check for consistency.**
   - "You mentioned real-time updates but also offline support — how should those interact?"
+
+The artifact register stays structured even when dialogue is open. Don't water down the artifact to match the conversational tone.
 
 ## Transition Signal
 
-The Questions phase is over when questions shift from the *what* and *why* to the *how*. Specifically:
+The Questions phase is over when questions shift from the *what* and *why* to the *how*:
 
-- Questions about "where does this connect to existing code?" → that's Research
-- Questions about "what technology should we use?" → that's Research
-- Questions about "how should we implement X?" → that's Design
-- Questions about file structure, module boundaries → that's Outline
+- "Where does this connect to existing code?" → Research.
+- "What technology should we use?" → Research.
+- "How should we implement X?" → Design.
+- File structure, slice boundaries → Structure.

@@ -1,177 +1,52 @@
 ---
 name: qrspi-dev-worktree
-description: Scaffold directory structure and set up dev tooling. Creates skeleton files and configures linting, formatting, and testing. Use in the Worktree phase of QRSPI development.
+description: Set up a git worktree for the project branch. Minimal git operations; no scaffolding or tooling install. Use in the Worktree phase of QRSPI development.
+model_tier: local
+inputs: structure.md (branch hint only)
+outputs: git worktree state
+forbidden_inputs: design.md, plan.md, slice contents
 ---
 
 # Worktree Phase
 
-Materialize the directory structure from the Outline and set up dev tooling. Creates skeleton files and configures the development environment so the Implement phase has a concrete workspace.
+Set up a `git worktree` for the project branch. That's it. Worktree does not scaffold files, configure tooling, or install dependencies — those concerns belong to slice 1 of Implement (where they can be vertical-slice-aware).
+
+## Phase Contract
+
+- **Reads:** `structure.md` only, and only the branch hint (if present). Project name optional, derived from the directory if needed.
+- **Writes:** git worktree state. No artifact file.
+- **Does not read:** `design.md`, slice plans, or any code. Worktree has no architectural opinion.
+- **Tier:** `local`. Mechanical git operations.
 
 ## How It Works
 
-1. **Read `outline.md`** — understand the intended structure
-2. **Read `plan.md`** — understand the Worktree Guidance section and the overall plan
-3. **Detect the language/ecosystem** from the tech stack in the plan
-4. **Scaffold the structure** — create directories and skeleton files
-5. **Set up dev tooling** — project initialization, linting, formatting, testing, git
-6. **Output:** A real directory tree with skeleton files and configured tooling
+1. **Detect repo presence.** Run `git rev-parse --is-inside-work-tree`. If non-zero (no repo), log "vibe mode — no repo, skipping worktree" and transition. The orchestrator may also skip entry to this phase entirely in vibe mode; the skill handles either path gracefully.
+2. **Determine branch name.** Use the `Branch Hint` from `structure.md` if present. Otherwise default to a sensible project-level name (e.g., `qrspi/<project-slug>`). The skill is parameterized on branch name — see Future note below.
+3. **Ensure clean working dir.** `git status --porcelain`. If non-empty, escalate.
+4. **Create the worktree.** `git worktree add <path> <branch>`. If the branch already exists, escalate (don't reuse silently).
+5. **Transition to Plan-slice-1.**
 
-## Scaffolding
+## Future: Parallel Slices
 
-### Create Directory Structure
-- Create all directories from the outline
-- Follow the module boundaries described in the outline
-- Use the naming conventions from the plan
+The current implementation runs slices serially in one project-level worktree. A future extension can run independent slices in parallel by creating a worktree per slice. The seam is small: the skill is already parameterized on branch name, so per-slice mode adds a per-slice branch (`<project>/slice-<N>`) plus a dependency declaration in `structure.md` indicating which slices can run in parallel and which must be serial.
 
-### Create Skeleton Files
-For each module/component, create a skeleton file containing:
-
-**Python modules:**
-```python
-"""Module description."""
-# TODO: Implement {module purpose}
-```
-
-**Python classes:**
-```python
-class ClassName:
-    """Class description.
-    
-    TODO: Implement {responsibilities}
-    """
-    
-    def method(self):
-        """Method description.
-        
-        TODO: Implement {behavior}
-        """
-        pass
-```
-
-**TypeScript/JavaScript modules:**
-```typescript
-/** Module description.
- * TODO: Implement {module purpose}
- */
-
-export function functionName(): ReturnType {
-    // TODO: Implement
-    return undefined as any;
-}
-```
-
-**Component shells (web):**
-```typescript
-export function ComponentName() {
-    // TODO: Implement component
-    return null;
-}
-```
-
-Skeleton files contain:
-- Module/class/function signatures
-- TODO comments indicating what needs to be implemented
-- Minimal, valid code that won't crash if imported
-- **Not implementation** — just the shape of what's needed
-
-### README Placeholder
-Create a basic README.md if one doesn't exist:
-```markdown
-# Project Name
-
-[Project description from outline.md]
-
-## Setup
-[Will be filled in by tooling setup]
-
-## Usage
-[To be determined]
-```
-
-## Dev Tooling Setup
-
-### Project Initialization
-Initialize the project based on the detected ecosystem:
-
-| Ecosystem | Initialization Command |
-|-----------|----------------------|
-| Python | `pip` + `requirements.txt` or `pyproject.toml` |
-| Node.js | `npm init` + `package.json` |
-| Rust | `cargo init` or `cargo new` |
-| Go | `go mod init` |
-| Ruby | `Gemfile` + bundler setup |
-| Java | `pom.xml` (Maven) or `build.gradle` (Gradle) |
-
-### Essential Tooling (configure per ecosystem)
-
-**Language:**
-- Linter (ruff, eslint, clippy, go vet, etc.)
-- Formatter (black, prettier, gofmt, etc.)
-
-**Testing:**
-- Test framework (pytest, jest, cargo test, etc.)
-- Basic test configuration
-
-**Git:**
-- `.gitignore` appropriate for the ecosystem and tooling
-- Initialize git repo if not already done
-
-**Config Files:**
-- Linter config (e.g., `pyproject.toml` for ruff, `.eslintrc`, etc.)
-- Formatter config (e.g., `.prettierrc`, `pyproject.toml` for black, etc.)
-- Test config (e.g., `pytest.ini`, `jest.config.js`, etc.)
-- Build system config if applicable
-
-### .gitignore Templates
-
-**Python:**
-```
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-*.egg
-.pytest_cache/
-.mypy_cache/
-```
-
-**Node.js:**
-```
-node_modules/
-dist/
-build/
-*.log
-.env
-.env.*
-coverage/
-.nyc_output/
-```
-
-**Rust:**
-```
-target/
-**/*.rs.bk
-Cargo.lock
-```
-
-**Go:**
-```
-vendor/
-*.exe
-*.exe~
-*.test
-*.out
-```
+No machinery for this in v1 — only the parameterization. When you want to experiment with parallel slices, add a `parallelism:` field to `structure.md` and a per-slice branch derivation here.
 
 ## No Human Checkpoint
 
-After scaffolding and tooling are complete, **automatically proceed to the next phase**. The skeleton files and configured tooling are the output — there's no human review gate here.
+Worktree transitions automatically:
 
-Say something like:
+> "Worktree set up on branch `<name>` at `<path>`. Moving to Plan for slice 1."
 
-> "Worktree phase is complete. I've scaffolded the directory structure, created skeleton files, and set up dev tooling (linter, formatter, test framework, git). The workspace is ready for implementation. Moving on."
+In vibe mode (no repo):
 
-Then automatically transition to the Implement phase.
+> "No git repo detected — vibe mode. Skipping worktree. Moving to Plan for slice 1."
+
+## Triggers for Escalation to the User
+
+Stop the phase and surface to the user when:
+
+- **Working directory is dirty** — `git status --porcelain` returned uncommitted changes. Suggested user action: stash or commit changes, then re-run.
+- **Target branch already exists** — re-using a branch is destructive. Suggested user action: pick a different branch name (edit `Branch Hint` in `structure.md`) or delete the existing branch deliberately.
+- **`git worktree add` fails** — git error output is the user's signal. Suggested user action: read the git error, resolve manually.
+- **Repo is in an unusual state** (detached HEAD, mid-rebase, mid-merge) — likely upstream cause: external. Suggested user action: resolve the git state first.

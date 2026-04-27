@@ -1,149 +1,194 @@
 ---
 name: qrspi-dev-review
-description: Review completed work for correctness, completeness, quality, and security. Fix minor issues automatically; defer major issues. Use in the Review phase of QRSPI development. Produces review.md.
+description: Review completed work in two modes — light per-slice correctness pass and heavy final thoroughness pass with optional PR description. Use in the Review phase of QRSPI development.
+model_tier: frontier-mid
+inputs: per-slice mode = slices/slice-N/plan.md + slice diff; final mode = all artifacts + full diff
+outputs: per-slice mode = slices/slice-N/review.md; final mode = review.md, optional pr.md
+forbidden_inputs: none
 ---
 
 # Review Phase
 
-Review the completed work for correctness, completeness, quality, and security. Produce a review document. Fix minor issues automatically; defer major issues and explain.
+Review runs in two distinct modes:
+
+- **Per-slice review** (light, correctness only) — runs after each Implement-slice. Catches bugs and plan mismatches against one slice's diff. Tier: `frontier-mid`.
+- **Final review** (heavy, correctness + thoroughness, optional PR description) — runs once after all slices are complete. Tier: `frontier-top` for the thoroughness pass.
+
+The point of Review is to look back at the work and catch things humans shouldn't have to. PR creation is a side product of doing the final review well, not the reason for the phase.
+
+## Phase Contract
+
+### Per-slice mode
+
+- **Reads:** `slices/slice-N/plan.md` and the slice's diff (the code added/modified during Implement-slice).
+- **Writes:** `slices/slice-N/review.md`.
+- **Tier:** `frontier-mid`.
+
+### Final mode
+
+- **Reads:** all upstream artifacts (`questions.md`, `research.md`, `design.md`, `structure.md`, every `slices/slice-N/plan.md` and `review.md`), the full project diff, and the working code.
+- **Writes:** `review.md` at the project root. Optionally `pr.md`.
+- **Tier:** `frontier-top` — the thoroughness pass benefits from frontier reasoning.
+
+The two modes use the same checklist tiers from [review-checklist.md](references/review-checklist.md): per-slice runs **Correctness Tier** only; final runs **Correctness + Thoroughness Tiers**.
 
 ## How It Works
 
-1. **Read `plan.md`** — understand what was supposed to be built
-2. **Read `design.md`** — understand the intended architecture
-3. **Read the implemented code** — understand what was actually built
-4. **Review systematically** — check correctness, completeness, testing, security, quality
-5. **Fix minor issues automatically** — typos, missing imports, trivial bugs
-6. **Defer major issues** — write them to `review.md`
-7. **Write `review.md`** — structured review with assessment and findings
+### Per-slice (light) mode
 
-## What to Review
+1. **Read `slices/slice-N/plan.md`** — what was supposed to be built for this slice.
+2. **Read the slice's diff** — what was actually built.
+3. **Run the Correctness Tier checklist** ([review-checklist.md](references/review-checklist.md#correctness-tier)).
+4. **Auto-fix** minor issues (typos, missing imports, trivial bugs).
+5. **Write `slices/slice-N/review.md`** with the assessment, auto-fixes applied, and any issues found.
+6. **Transition** based on assessment (see Transition below).
 
-### Correctness
-- Does the code match the plan and design?
-- Are the behaviors specified in tasks implemented correctly?
-- Are there logical errors or incorrect implementations?
-- Do the pieces fit together as designed?
+### Final (heavy) mode
 
-### Completeness
-- Are all plan tasks fulfilled?
-- Are there TODOs left in skeleton files that should be implemented?
-- Are there missing pieces that the plan implied?
-- Is anything that should have been built left undone?
+1. **Read all upstream artifacts** — `questions.md`, `research.md`, `design.md`, `structure.md`, every slice's `plan.md` and `review.md`.
+2. **Read the full project state** — the working code, tests, configuration.
+3. **Run the Correctness Tier checklist** for any cross-slice integration concerns.
+4. **Run the Thoroughness Tier checklist** — test coverage gaps, type design, simplification opportunities, performance considerations, dead code, documentation.
+5. **Auto-fix** minor issues.
+6. **Write `review.md`** with the full assessment.
+7. **PR mode (optional):**
+   - Run `git remote -v`. If a remote exists, ask the user: `Generate PR description? [Y/n]`.
+   - If yes: produce `pr.md` (description, test plan, back-links to artifacts).
+   - This phase **does not** run `gh pr create`. The user decides what to do with `pr.md`.
 
-### Testing
-- Are tests present for the implemented features?
-- Are tests meaningful (testing real logic, not just coverage)?
-- Do tests cover key edge cases?
-- Do tests pass?
-
-### Security
-- Any obvious vulnerabilities (SQL injection, XSS, exposed secrets, etc.)?
-- Proper input validation?
-- Safe error handling (no stack traces exposed)?
-- No hardcoded secrets or credentials?
-
-### Code Quality
-- Readability and naming
-- Error handling completeness
-- Edge case handling
-- Consistent style and patterns
-- No obvious code smells
-
-### Tooling
-- Does linting pass? Run the linter
-- Does formatting pass? Run the formatter
-- Are there obvious build/compile errors?
-- Is the project setup correctly?
-
-## Fixing vs. Deferring
+## Auto-Fix vs. Defer vs. Escalate
 
 ### Auto-Fix (Minor Issues)
-- Missing imports or typos
-- Trivial bugs (off-by-one, wrong comparison operator)
-- Missing error handling on obvious paths
-- Small formatting/linting issues
-- Missing comments for counter-intuitive code
-- Small corrections that don't change behavior
+
+Fix immediately, in place. Note in the review under "Minor Fixes Applied":
+
+- Missing imports, typos in strings/comments.
+- Trivial bugs (off-by-one, wrong comparison operator).
+- Small lint/format issues.
+- Missing comment for non-obvious code.
 
 ### Defer to review.md (Major Issues)
-- Logic errors that change behavior
-- Missing features or incomplete implementations
-- Security vulnerabilities
-- Architecture mismatches with the design
-- Missing tests for significant logic
-- Performance problems
-- Any issue that requires design-level decisions
 
-### Stop and Escalate (Systemic Problems)
-- The work is fundamentally broken and can't be fixed incrementally
-- The design was wrong and the entire implementation needs rethinking
-- Multiple interconnected failures suggest a cascade of issues
-- The codebase is in a state where fixing one issue breaks three others
+Write to the appropriate review file with assessment "Yellow" or "Red." Do **not** auto-fix:
 
-For systemic problems, stop and explain to the user with a clear recommendation.
+- Logic changes that affect behavior.
+- Missing features or incomplete implementations.
+- Architecture mismatches with `design.md`.
+- Missing tests for significant logic.
+- Security vulnerabilities.
+
+The user reads the review and decides next steps. **Review does not auto-iterate with Implement.** No automatic re-runs. (See [revision-rules.md](references/revision-rules.md).)
+
+### Escalate (Systemic / Cross-Cutting Problems)
+
+Stop and surface to the user when the issue is bigger than "Implement should fix this." See Triggers for Escalation below.
 
 ## Output Artifact
 
-Write `review.md` with:
+### `slices/slice-N/review.md` (per-slice)
 
-### Overall Assessment
-- **Green**: No major issues, minor fixes applied, ready for human review
-- **Yellow**: Minor issues found and fixed, a few items to note, generally good
-- **Red**: Major issues found, significant work needed before ready
-
-### Minor Fixes Applied
-List of issues you auto-fixed (for transparency):
 ```markdown
-- Fixed missing `import os` in `src/utils.py`
-- Fixed typo in error message: "User not found" → "User not found."
-- Fixed linting issue: removed unused import in `src/models.py`
+# Review: Slice <N>
+**Assessment:** <Green | Yellow | Red>
+
+## Minor Fixes Applied
+- ...
+
+## Issues Found
+### [<Severity>] <title>
+- **File:** `src/...`
+- **What:** ...
+- **Recommended Fix:** ...
 ```
 
-### Items Found
-Each item with:
+Per-slice reviews stay tight — Correctness Tier only.
+
+### `review.md` (final)
+
 ```markdown
-#### [Severity] Issue Title
-- **File:** `src/file.py`
-- **Location:** Line numbers or function name
-- **What:** Description of the problem
-- **Recommended Fix:** What should be done
+# Review: <project name>
+**Date:** <date>
+**Assessment:** <Green | Yellow | Red>
+
+## Summary
+<Brief summary of overall findings>
+
+## Minor Fixes Applied
+- ...
+
+## Correctness Findings
+### [<Severity>] <title>
+- ...
+
+## Thoroughness Findings
+### [<Severity>] <title>
+- ...
+
+## Cross-Slice Integration Notes
+<Any issues that emerged from looking at slices in combination, not individually>
 ```
 
-Severity levels:
-- **High** — correctness, security, missing core functionality
-- **Medium** — missing tests, edge cases, error handling
-- **Low** — style, minor improvements, documentation
+### `pr.md` (optional, only when user opts in)
 
-### Deferred Issues
-Issues that were deferred to Implement (for the revision loop):
-- Clear description of what needs to change
-- Which file(s) need modification
-- Why it was deferred (requires design decision, significant rework, etc.)
+```markdown
+# <PR title>
 
-## Revision Loop
+## Summary
+<1-3 bullet points: what changed and why>
 
-### If review.md Has Only Minor Issues (all auto-fixed)
-> "Review complete. Minor issues were auto-fixed. `review.md` shows a green assessment — the work is ready for human review."
+## Test Plan
+- [ ] <verification command from each slice>
+- [ ] ...
 
-### If review.md Has Major Issues (deferred)
-> "Review found {N} major issues. I've written `review.md` with detailed findings. The deferred issues need to be addressed before the work is ready. Let me know if you'd like me to hand these off to the Implement phase for revision."
+## Background
+- Questions: [questions.md](questions.md)
+- Research: [research.md](research.md)
+- Design: [design.md](design.md)
+- Structure: [structure.md](structure.md)
+- Slices:
+  - [Slice 1: ...](slices/slice-1/plan.md)
+  - [Slice 2: ...](slices/slice-2/plan.md)
 
-The revision flow:
-1. Review finds major issues → writes `review.md`
-2. Human approves → Implement works on deferred items with `review.md` as context
-3. Implement completes → back to Review
-4. Repeat until review.md is clean or escalation is needed
+## Notes for Reviewer
+<Anything from the final review that's worth a reviewer's attention>
+```
 
-### If Review Escalates (systemic problems)
-> "Review has identified systemic issues that suggest the implementation needs significant rework. Here's what I found: [summary]. I recommend [recommendation]. Should I proceed with [option] or would you like to take a different approach?"
+## Severity
+
+Three levels — same in both modes:
+
+- **High** — correctness, security, missing core functionality, broken integration.
+- **Medium** — missing tests, edge cases, error-handling gaps.
+- **Low** — style, minor improvements, documentation gaps.
+
+## Transition
+
+### Per-slice mode
+
+- **Green** — auto-transition to next slice's Plan (autonomous mode) or to next slice's gate (gated mode).
+- **Yellow** (minor issues found, all auto-fixed) — same auto-transition; the issues are documented but did not block.
+- **Red** (high-severity issues remain unfixed) — escalate. Don't proceed to next slice.
+
+### Final mode
+
+- **Green** — final review complete. Surface to user (with optional `pr.md`).
+- **Yellow** — review complete with notable findings. Surface to user.
+- **Red** — surface to user with recommended action (likely re-run an upstream phase).
 
 ## Picking Up After a Previous Review
 
-If `review.md` already exists from a prior review:
+If a review file already exists from a prior run:
 
-1. Read the existing `review.md` to see what was found before
-2. Read the current state of the code to see if previous issues were fixed
-3. Re-review the previously deferred items
-4. Check for any new issues
-5. Update `review.md` with the current assessment
+1. Read the previous review to see what was found.
+2. Read the current state of the code to see if previous issues were addressed.
+3. Update the review file with the current state — remove items that have been fixed, keep items that haven't, add anything new.
+4. Note in the review what was checked and what changed since last time.
+
+## Triggers for Escalation to the User
+
+Stop the phase and surface to the user when:
+
+- **Per-slice review finds high-severity issues that aren't auto-fixable** — likely upstream cause: Plan-slice or Implement. Suggested user action: re-run Implement-slice with the findings, or re-run Plan-slice if the plan was wrong.
+- **Final review finds systemic problems** (the architecture as built doesn't match `design.md` in a fundamental way; security model is broken across slices; multiple slices duplicate logic that should have been factored) — likely upstream cause: Design or Structure. Suggested user action: re-run the affected upstream phase.
+- **Cross-slice integration is broken** even though individual slice reviews were Green — likely upstream cause: Structure (slices were over-coupled or under-coupled). Suggested user action: re-run Structure with the integration findings.
+- **The user opts into PR mode but `git remote` fails or returns ambiguous output** — likely upstream cause: external. Suggested user action: clarify the remote setup, or skip PR mode.

@@ -2,37 +2,67 @@
 
 Reference for creating effective architecture designs during the QRSPI flow.
 
+## Approach Comparison Template
+
+Use this template in dialogue when surfacing 2-3 viable approaches for any major decision. The point is to make tradeoffs visible *before* converging, not after.
+
+```markdown
+## Decision: <decision name>
+
+### Approach A: <name>
+- **Sketch:** <one-paragraph description of the approach>
+- **Strengths:** <what this approach gives us>
+- **Weaknesses:** <what we sacrifice>
+- **Fits our constraints because:** <ties back to questions.md / research.md>
+- **Doesn't fit because:** <where this approach pushes against our constraints>
+
+### Approach B: <name>
+- **Sketch:** ...
+- **Strengths:** ...
+- **Weaknesses:** ...
+- **Fits because:** ...
+- **Doesn't fit because:** ...
+
+### Approach C: <name>  (optional — skip if there are only two real options)
+- ...
+
+### Recommendation
+<Single approach recommended, with the one or two tradeoffs that decided it. The user converges or pushes back.>
+```
+
+The recommendation comes **after** the comparison, not in place of it. If you can't articulate two real alternatives, that itself is a finding — surface it ("only one viable approach because constraint X eliminates everything else") rather than padding with strawmen.
+
 ## Architecture Patterns to Consider
 
 ### Monolith
-- Everything in one deployable unit
-- Best for: small teams, simple projects, rapid development
-- Worst for: teams needing independent scaling, complex distributed systems
+- Everything in one deployable unit.
+- Best for: small teams, simple projects, rapid development.
+- Worst for: teams needing independent scaling, complex distributed systems.
 
 ### Modular / Plugin Architecture
-- Core system with pluggable modules
-- Best for: extensible systems, plugins/extensions, evolving feature sets
-- Worst for: when module boundaries create unnecessary complexity
+- Core system with pluggable modules.
+- Best for: extensible systems, plugins/extensions, evolving feature sets.
+- Worst for: when module boundaries create unnecessary complexity.
 
 ### Layered Architecture
-- Presentation → Business Logic → Data Access
-- Best for: traditional applications, clear separation of concerns
-- Worst for: event-driven systems, real-time applications
+- Presentation → Business Logic → Data Access.
+- Best for: traditional applications, clear separation of concerns.
+- Worst for: event-driven systems, real-time applications.
 
 ### Event-Driven
-- Components communicate through events/message buses
-- Best for: async processing, real-time systems, decoupled services
-- Worst for: simple CRUD apps, systems needing strict transaction guarantees
+- Components communicate through events/message buses.
+- Best for: async processing, real-time systems, decoupled services.
+- Worst for: simple CRUD apps, systems needing strict transaction guarantees.
 
 ### Client-Server
-- Clients request services from a centralized server
-- Best for: web apps, API services, centralized data management
-- Worst for: peer-to-peer systems, offline-first applications
+- Clients request services from a centralized server.
+- Best for: web apps, API services, centralized data management.
+- Worst for: peer-to-peer systems, offline-first applications.
 
 ### Microservices
-- Independent, deployable services communicating via network
-- Best for: large teams, independent scaling needs, polyglot systems
-- Worst for: small projects, network latency sensitivity, operational complexity
+- Independent, deployable services communicating via network.
+- Best for: large teams, independent scaling needs, polyglot systems.
+- Worst for: small projects, network latency sensitivity, operational complexity.
 
 ## Describing Component Relationships
 
@@ -99,7 +129,9 @@ For each component, describe:
 - Where does validation happen? (input, business logic, persistence)
 - What validation libraries or patterns are used?
 
-## Template for Technology Decisions
+## Template for Single Technology Decisions
+
+When the comparison is only between two specific tools (not architectural directions), this lighter template is fine:
 
 ```markdown
 ### Technology: [Name]
@@ -115,3 +147,5 @@ For each component, describe:
 - What we gain
 - What we sacrifice
 ```
+
+For larger, architecture-shaping decisions, use the Approach Comparison Template at the top of this file instead.

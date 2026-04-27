@@ -1,6 +1,6 @@
 # Revision Rules
 
-Decision tree for handling review findings and managing the revision loop.
+How Review handles findings. The trichotomy is auto-fix / defer / escalate. Review does **not** auto-iterate with Implement.
 
 ## Decision Tree
 
@@ -14,165 +14,119 @@ Review finds issue
    Yes       No
    │          │
    ▼          ▼
- Auto-fix   Is the issue major?
- in place   │
-        ┌────┴────┐
-        Yes       No
-        │          │
-        ▼          ▼
-  Write to   Could this be
-  review.md  a systemic
-  with       problem?
-  deferred   │
-  status    ┌────┴────┐
-             Yes       No
-             │          │
-             ▼          ▼
-       Stop and   Write to
-       escalate   review.md
-       to user    as low
-                  severity
+ Auto-fix   Is it scoped to this slice / fixable
+ in place   by re-running Implement on this slice?
+            │
+        ┌───┴───┐
+        Yes    No (cross-cutting / systemic)
+        │      │
+        ▼      ▼
+   Defer     Escalate
+   to        to user
+   review    with named
+   .md       upstream cause
 ```
+
+There is no "automatically loop back to Implement" path. Whether the user wants to re-run Implement on a slice with the deferred findings as input is the user's call after reading the review.
 
 ## Minor → Auto-Fix
 
-**Fix immediately without writing to review.md.**
+Fix immediately without writing to the issues list. Examples:
 
-Examples:
-- Missing import
-- Typo in string
-- Wrong comparison operator (`=` vs `==`)
-- Formatting/linting issues
-- Missing closing bracket or quote
-- Small error handling addition
-- Wrong default parameter value
+- Missing import.
+- Typo in string or comment.
+- Wrong comparison operator (`=` vs. `==`).
+- Formatting / linting issues.
+- Missing closing bracket or quote.
+- Small error-handling addition (e.g., adding `except FileNotFoundError` where it was clearly intended).
+- Wrong default parameter value.
 
-After auto-fixing, add to review.md under "Minor Fixes Applied" for transparency.
+After auto-fixing, list the change under **Minor Fixes Applied** in the review for transparency.
 
 ## Major → Defer to review.md
 
-**Write to review.md with deferred status. Do not fix.**
+Write to the appropriate review file (`slices/slice-N/review.md` for per-slice mode, `review.md` for final mode) with severity. Do **not** auto-fix.
 
 Major issues require decisions beyond simple corrections:
-- Logic changes that affect behavior
-- Missing features that need implementation
-- Architecture mismatches
-- Security fixes that require design changes
-- Test additions that need new test structure
 
-Write each deferred issue with:
-- Clear description of the problem
-- Which file(s) need to change
-- Recommended fix (but don't implement it)
-- Why it was deferred (requires design decision, significant rework, etc.)
+- Logic changes that affect behavior.
+- Missing features.
+- Architecture mismatches.
+- Security fixes that need design changes.
+- Test additions that need new test structure.
 
-## Systemic → Stop and Escalate
+Each deferred issue has:
 
-**Stop. Explain to the user. Don't keep iterating.**
+- **Title** (with severity).
+- **File** and location (function name, line range).
+- **What:** description of the problem.
+- **Recommended Fix:** what should be done — but don't implement it.
 
-Systemic problems:
-- The implementation is fundamentally broken (not just buggy)
-- The design was wrong and the entire approach needs rethinking
-- Fixing one issue consistently breaks three others
-- Multiple high-severity issues across many files
-- The codebase doesn't match the planned architecture in a fundamental way
+The user reads the review and decides:
+
+- Re-run Implement-slice with the review as context (user's call, not auto).
+- Edit the slice's `plan.md` to add tasks for the fixes (manual).
+- Re-run an upstream phase if the issue points there.
+- Accept the issue (e.g., for a low-severity nice-to-have).
+
+## Systemic / Cross-Cutting → Escalate
+
+Stop and surface to the user when the issue is bigger than "Implement should fix this on this slice."
+
+Systemic indicators:
+
+- Multiple slices show the same problem — points at upstream (Plan template, Design, Structure).
+- Architecture as built doesn't match `design.md` in a fundamental way.
+- Cross-slice integration is broken even though individual slices reviewed Green.
+- The codebase needs significant rework, not patches.
 
 When escalating:
-1. Summarize the systemic problem clearly
-2. Explain the evidence (what you've found)
-3. Provide a recommendation (what needs to happen)
-4. Ask the user how to proceed
+
+1. Summarize the issue clearly.
+2. Show the evidence (file:line references, multiple instances).
+3. Name the most likely upstream cause (Design, Structure, Plan, Implement).
+4. Suggest a user action (re-run X, or accept and move on, or take a different path).
 
 Example:
 
-> "Review found a systemic issue: the authentication implementation doesn't match the design.md specification. The design calls for JWT-based session auth with refresh tokens, but the implementation uses session cookies. This affects 12 files across the auth module, middleware, and API layer. I recommend either: (a) redesign to use session cookies and update design.md, or (b) rewrite the auth module to use JWT as designed. Which approach would you prefer?"
+> "Final review found a systemic issue: the auth implementation across slices 1, 3, and 5 silently bypasses the authorization checks `design.md` specified for admin endpoints. This is consistent across slices, which suggests the issue is upstream — Plan-slice templates didn't surface auth checks, or Design under-specified them. Recommend re-running Design with the auth-enforcement requirement explicit, then regenerating affected slices' Plans. Alternatively, manually add the auth checks if the architectural intent matches what's in design.md."
 
-## The Revision Loop
+## What Was Removed from a Previous Version
 
-### How It Works
-1. Review runs → finds major issues → writes `review.md`
-2. Human reviews `review.md` → approves revision
-3. Implement runs with `review.md` as context → fixes deferred items
-4. Review runs again → checks if deferred items are fixed
-5. Repeat until clean or escalation
+A previous version of this skill had Review automatically hand findings to Implement and iterate up to 3 times. That auto-loop is gone. Review writes findings; the user decides next steps. This keeps Review's role clear (find issues; don't fix everything) and avoids the kind of runaway agent loops where the same issue keeps surfacing across iterations.
 
-### How Implement Handles review.md
-When the Implement phase is given `review.md` as context:
-- Read `review.md` to understand deferred issues
-- Read `plan.md` to understand what was originally planned
-- Implement the fixes described in deferred items
-- For each deferred item that is fixed, note it: "Fixed review.md item: [description]"
-- If a deferred item can't be fixed as described, explain why and suggest an alternative
-- Don't modify `review.md` — the Review phase owns it
+## Writing Review Entries
 
-### How Review Handles Previous review.md
-When the Review phase finds an existing `review.md`:
-- Read the previous review to see what was deferred
-- Check if the deferred items have been addressed
-- Re-review the previously problematic areas
-- Update `review.md` with current status
-- Remove fixed items from the deferred list
-- Note any new issues
-
-### When to Stop Iterating
-- **Clean review**: review.md has no deferred major issues
-- **Escalation**: Review identifies systemic problems
-- **Stalemate**: The same issue keeps coming back after multiple fixes — stop and ask the user
-- **After 3 iterations**: If after 3 Implement↔Review cycles there are still major issues, escalate to the user
-
-## Writing review.md Entries
-
-Good deferred issue entries:
+Good deferred-issue entry:
 
 ```markdown
-#### [High] User validation doesn't handle empty email
-- **File:** `src/auth/models.py`, `src/auth/validators.py`
-- **Location:** `validate_email()` function
-- **What:** Empty string passes validation, should be rejected
-- **Recommended Fix:** Add check for empty/whitespace-only email in `validate_email()`. Also add a test case.
-- **Why deferred:** Requires changes to both the validator and the test suite
+#### [High] User registration silently accepts empty email
+
+- **File:** `src/api/auth.py`
+- **Location:** `register()` at line 42
+- **What:** Empty string passes the email validator. Should be rejected with a 400.
+- **Recommended Fix:** Add `if not email.strip(): raise ValidationError("email required")` in `validate_email()`. Add a regression test in `tests/api/test_auth.py`.
 ```
 
-Bad deferred issue entries:
+Bad deferred-issue entry:
 
 ```markdown
-#### [High] Something's wrong with validation
+#### [High] Validation issue
 - **File:** somewhere in auth
 - **What:** doesn't work right
 - **Recommended Fix:** fix it
 ```
 
-## review.md Structure
+## Picking Up After a Previous Review
 
-```markdown
-# Review: [Project Name]
-**Date:** [date]
-**Assessment:** [Green/Yellow/Red]
+If a review file already exists from a prior run:
 
-## Summary
-[Brief summary of the review findings]
+1. Read the previous review.
+2. Check whether previously-deferred items have been addressed in the code.
+3. Update the review file:
+   - Remove items that are now fixed.
+   - Keep items still present.
+   - Add anything new that surfaced.
+4. Note in the review what was checked and what changed since last time.
 
-## Minor Fixes Applied
-- Fixed missing import in `src/utils.py`
-- Fixed typo in error message
-
-## Items Found
-
-#### [High] Issue Title
-- **File:** `src/file.py`
-- **Location:** function_name(), line ~42
-- **What:** Description of the problem
-- **Recommended Fix:** What should be done
-- **Status:** Deferred
-
-## Deferred Issues
-
-#### [Medium] Issue Title
-- **File:** `src/file.py`
-- **What:** Description of the problem
-- **Recommended Fix:** What should be done
-- **Why deferred:** Why this requires Implement-phase attention
-
-## Escalation (if applicable)
-If the review identifies systemic problems, document them here with a clear recommendation.
-```
+The review file is a living artifact during iteration; the user reads it to decide whether the project is ready or needs more work.
