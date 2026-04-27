@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-plan
+name: qrspi-pi-plan
 description: Write a detailed, mechanical implementation plan for one slice. Per-slice plans run in fresh contexts and are suitable for smaller models. Use in the Plan phase of QRSPI development. Produces slices/slice-N/plan.md.
 model_tier: local
 inputs: structure.md, design.md, current slice's section

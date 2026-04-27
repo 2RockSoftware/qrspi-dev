@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-review
+name: qrspi-pi-review
 description: Review completed work in two modes — light per-slice correctness pass and heavy final thoroughness pass with optional PR description. Use in the Review phase of QRSPI development.
 model_tier: frontier-mid
 inputs: per-slice mode = slices/slice-N/plan.md + slice diff; final mode = all artifacts + full diff

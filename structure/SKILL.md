@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-structure
+name: qrspi-pi-structure
 description: Decompose the design into vertical, end-to-end-testable slices. First slice is always a thin proof-of-concept of the full stack. Use in the Structure phase of QRSPI development. Produces structure.md.
 model_tier: frontier-top
 inputs: design.md, questions.md, research.md

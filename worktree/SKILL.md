@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-worktree
+name: qrspi-pi-worktree
 description: Set up a git worktree for the project branch. Minimal git operations; no scaffolding or tooling install. Use in the Worktree phase of QRSPI development.
 model_tier: local
 inputs: structure.md (branch hint only)

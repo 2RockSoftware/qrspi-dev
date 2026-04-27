@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-implement
+name: qrspi-pi-implement
 description: Build one slice by following its plan. Write tests, run them until they pass, then mark the slice complete. Use in the Implement phase of QRSPI development.
 model_tier: local
 inputs: slices/slice-N/plan.md, code under the slice's footprint

@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-questions
+name: qrspi-pi-questions
 description: Refine rough project ideas into clarified requirements through open dialogue. Use in the Questions phase of QRSPI development. Produces questions.md.
 model_tier: frontier-top
 inputs: user prompt

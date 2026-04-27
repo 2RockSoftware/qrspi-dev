@@ -1,4 +1,4 @@
-# qrspi-dev
+# qrspi-pi
 
 A phased agentic development framework for [pi](https://pi.dev). Pronounced **"crispy"**.
 
@@ -21,17 +21,17 @@ Worktree is a small operational helper that runs once at slice 1 to set up `git 
 ## Installation
 
 ```bash
-pi install git:github.com/2RockSoftware/qrspi-dev
+pi install git:github.com/2RockSoftware/qrspi-pi
 ```
 
-Or clone the repo and place the `qrspi-dev/` directory in `~/.pi/agent/skills/`.
+Or clone the repo and place the `qrspi-pi/` directory in `~/.pi/agent/skills/`.
 
 ## Usage
 
 Start with the orchestrator. It detects which phase you're at and guides you through the flow:
 
 ```
-/skill:qrspi-dev "I want to build a CLI tool that manages my reading list"
+/skill:qrspi-pi "I want to build a CLI tool that manages my reading list"
 ```
 
 The orchestrator checks for existing artifacts and starts at the right phase. It will:
@@ -41,7 +41,7 @@ The orchestrator checks for existing artifacts and starts at the right phase. It
 - **Optionally gate per-slice** if `structure.md` is set to `mode: gated`.
 - **Surface an escalation** when a phase gets stuck. The phase names the most likely upstream cause; the user decides what to do.
 
-To resume an interrupted flow, run `/skill:qrspi-dev` again — phase detection picks up where the last run stopped.
+To resume an interrupted flow, run `/skill:qrspi-pi` again — phase detection picks up where the last run stopped.
 
 ## Artifact Layout
 
@@ -118,3 +118,8 @@ A harness that routes per phase can read `model_tier` from each `SKILL.md`. The 
 These skills are project-agnostic. Domain-specific skills (like `django-htmx-tailwind`) integrate naturally — for example, a Django skill could be loaded during Questions or Design to inform technology choices and architectural decisions.
 
 A future direction worth experimenting with: parallel slice development. The worktree phase is already parameterized on branch name, leaving room for per-slice branches and dependency declarations in `structure.md`. No machinery for this in v1.
+
+## Credit
+
+QRSPI methodology by Dexter Horthy / HumanLayer.
+Primary source: https://www.youtube.com/watch?v=YwZR6tc7qYg

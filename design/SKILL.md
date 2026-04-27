@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-design
+name: qrspi-pi-design
 description: Make architectural decisions by surfacing 2-3 viable approaches with tradeoffs, converging with the user, then synthesizing the chosen approach into design.md. Use in the Design phase of QRSPI development.
 model_tier: frontier-top
 inputs: questions.md, research.md

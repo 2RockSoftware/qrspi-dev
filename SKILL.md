@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev
+name: qrspi-pi
 description: Orchestrates phased agentic software development (Questions → Research → Design → Structure → Plan → Worktree → Implement → Review). Use as the entry point when starting a new project. Pronounced "crispy".
 model_tier: frontier-mid
 inputs: user prompt, project artifact state
@@ -7,7 +7,7 @@ outputs: phase routing decision
 forbidden_inputs: none
 ---
 
-# QRSPI-Dev Orchestrator
+# QRSPI-Pi Orchestrator
 
 This is the QRSPI orchestrator. The phases are **Questions → Research → Design → Structure → Plan → Worktree → Implement → Review**. Pronounced "crispy."
 

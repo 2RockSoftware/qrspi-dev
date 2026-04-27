@@ -1,5 +1,5 @@
 ---
-name: qrspi-dev-research
+name: qrspi-pi-research
 description: Gather objective facts from docs, code, and the web to inform Design. Use in the Research phase of QRSPI development. Produces research.md.
 model_tier: frontier-mid
 inputs: questions.md, codebase, web sources
