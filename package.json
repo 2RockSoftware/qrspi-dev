@@ -1,0 +1,15 @@
+{
+  "name": "qrspi-pi",
+  "version": "1.0",
+  "description": "Phased agentic development framework implementing QRSPI methodology.",
+  "keywords": [
+    "pi-package",
+    "qrspi",
+    "methodology",
+    "skilly"
+  ],
+  "license": "MIT",
+  "pi": {
+    "skills": ["./"]
+  }
+}
